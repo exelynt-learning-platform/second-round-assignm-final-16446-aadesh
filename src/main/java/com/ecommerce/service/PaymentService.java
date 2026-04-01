@@ -30,6 +30,12 @@ public class PaymentService {
         Stripe.apiKey = stripeSecretKey;
     }
 
+    private boolean isMockMode() {
+        return stripeSecretKey == null
+                || stripeSecretKey.isBlank()
+                || stripeSecretKey.contains("YOUR_STRIPE_SECRET_KEY");
+    }
+
     public Map<String, String> createPaymentIntent(Long orderId, String userEmail) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
@@ -40,6 +46,16 @@ public class PaymentService {
 
         if (order.getPaymentStatus() == Order.PaymentStatus.PAID) {
             throw new RuntimeException("This order is already paid");
+        }
+
+        if (isMockMode()) {
+            String mockIntentId = "pi_mock_" + orderId + "_" + System.currentTimeMillis();
+            Map<String, String> response = new HashMap<>();
+            response.put("clientSecret", mockIntentId + "_secret_mock");
+            response.put("paymentIntentId", mockIntentId);
+            response.put("orderId", orderId.toString());
+            response.put("note", "DEMO MODE - Add real Stripe key in application.properties for live payments");
+            return response;
         }
 
         try {
@@ -72,6 +88,10 @@ public class PaymentService {
 
         if (!order.getUser().getEmail().equals(userEmail)) {
             throw new RuntimeException("You can only confirm payment for your own order");
+        }
+
+        if (isMockMode() || paymentIntentId.startsWith("pi_mock_")) {
+            return orderService.updatePaymentStatus(orderId, Order.PaymentStatus.PAID, paymentIntentId);
         }
 
         try {
