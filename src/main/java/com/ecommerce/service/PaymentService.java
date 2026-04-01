@@ -31,9 +31,13 @@ public class PaymentService {
     }
 
     private boolean isMockMode() {
-        return stripeSecretKey == null
-                || stripeSecretKey.isBlank()
-                || stripeSecretKey.contains("YOUR_STRIPE_SECRET_KEY");
+        if (stripeSecretKey == null) {
+            return true;
+        }
+        if (stripeSecretKey.trim().isEmpty()) {
+            return true;
+        }
+        return stripeSecretKey.contains("YOUR_STRIPE_SECRET_KEY");
     }
 
     public Map<String, String> createPaymentIntent(Long orderId, String userEmail) {

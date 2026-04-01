@@ -33,7 +33,7 @@ public class OrderService {
         User user = getUserByEmail(email);
 
         Cart cart = cartRepository.findByUser(user)
-                .orElseThrow(() -> new RuntimeException("Cart is empty"));
+                .orElseThrow(() -> new ResourceNotFoundException("Cart not found for user"));
 
         if (cart.getItems().isEmpty()) {
             throw new RuntimeException("Cart is empty. Add products before checkout.");
